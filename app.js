@@ -1,41 +1,87 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const passport = require('passport');
+const passportLocal = require('passport-local').Strategy;
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+const User = require("./user")
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const app = express();
+const port = 5000;
 
-var app = express();
+mongoose.connect("mongodb+srv://Menthol:Dz020210@cubex-main.gdxri.mongodb.net/test?retryWrites=true&w=majority",
+    {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+    },
+    ()=>{
+        console.log("Mongoose is connected");
+    }
+);
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+// Middleware
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+}))
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+    secret: "secretcode",
+    resave: true,
+    saveUninitialized: true
+}))
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use(cookieParser("secretcode"))
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+app.use(passport.initialize());
+app.use(passport.session());
+
+require("./passportConfig")(passport);
+// --------------------------------------------------------------------------- 
+
+// Routes
+app.post("/login", (req, res, next) => {
+    console.log("yeet");
+    passport.authenticate("local", (err, user, info) => {
+        if (err) throw err;
+        if (!user) res.send("No User Exists");
+        else {
+            req.logIn(user, err => {
+                if (err) throw err;
+                res.send("Successfully Authenticated");
+                console.log(req.user);
+            });
+        }
+    })(req, res, next);
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+app.post("/register", (req, res) => {
+    User.findOne({username: req.body.username}, async (err, doc) => {
+        if (err) throw err;
+        if (doc) res.send("User already exists");
+        if (!doc) {
+            const hashedPass = await bcrypt.hash(req.body.password, 10); 
+            const newUser = new User({
+                username: req.body.username,
+                password: hashedPass
+            });
+            await newUser.save();
+            res.send ("User Created");
+        }
+       
+    })
+})
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+app.get("/user", (req, res)=>{
+    res.send(req.user);
 });
 
-module.exports = app;
+// Start server
+app.listen(port, ()=>{
+    console.log(`ready on ${port}`);
+});
