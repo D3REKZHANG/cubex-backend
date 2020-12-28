@@ -46,7 +46,6 @@ require("./passportConfig")(passport);
 
 // Routes
 app.post("/login", (req, res, next) => {
-    console.log("yeet");
     passport.authenticate("local", (err, user, info) => {
         if (err) throw err;
         if (!user) res.send("No User Exists");
@@ -54,31 +53,37 @@ app.post("/login", (req, res, next) => {
             req.logIn(user, err => {
                 if (err) throw err;
                 res.send("Successfully Authenticated");
-                console.log(req.user);
             });
         }
     })(req, res, next);
 });
 
 app.post("/register", (req, res) => {
-    User.findOne({username: req.body.username}, async (err, doc) => {
+    User.findOne({ username: req.body.username  }, async (err, doc) => {
         if (err) throw err;
-        if (doc) res.send("User already exists");
+        if (doc) res.status(409).send("User already exists");
         if (!doc) {
-            const hashedPass = await bcrypt.hash(req.body.password, 10); 
+            const hashedPassword = await bcrypt.hash(req.body.password, 10);
             const newUser = new User({
+                email: req.body.email,
                 username: req.body.username,
-                password: hashedPass,
-                timeData: {}
+                password: hashedPassword,
+                timeRegistered: new Date(),
+                timeData: []
             });
             await newUser.save();
-            res.send ("User Created");
+            res.send("User Created");
         }
-       
+    });
+});
+
+app.post("/update", (req, res) => {
+    User.findOneAndUpdate({username: req.body.username}, {timeData: req.body.timeData}, async (err, doc) => {
+        if (err) throw err;
     })
 })
 
-app.get("/user", (req, res)=>{
+app.get("/user",  (req, res)=>{
     res.send(req.user);
 });
 
