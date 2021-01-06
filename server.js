@@ -87,6 +87,12 @@ app.get("/user",  (req, res)=>{
     res.send(req.user);
 });
 
+app.get('/logout', function(req, res){
+    req.logout();
+    //res.redirect('/');
+    res.send("Logged Out");
+});
+
 // Start server
 app.listen(port, ()=>{
     console.log(`ready on ${port}`);
