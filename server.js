@@ -10,7 +10,7 @@ const bodyParser = require('body-parser');
 const User = require("./user")
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 
 mongoose.connect("mongodb+srv://Menthol:Dz020210@cubex-main.gdxri.mongodb.net/test?retryWrites=true&w=majority",
     {
