@@ -26,7 +26,7 @@ mongoose.connect("mongodb+srv://Menthol:Dz020210@cubex-main.gdxri.mongodb.net/te
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cors({
-    origin: "https://cubextimer.netlify.app",
+    origin: "cubextimer.netlify.app",
     credentials: true
 }))
 
